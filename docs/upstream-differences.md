@@ -12,7 +12,7 @@ When upstream accepts the new declaration, consumers can update the `moon-nix` i
 
 ## Native CLI builder
 
-The public `buildNativeCli` builder uses `moon build --target native --release` for package syntax that `buildProject` cannot parse, such as `#cfg` imports on toolchains that support them.
+The public `buildNative` builder uses `moon build --target native --release` for package syntax that `buildProject` cannot parse, such as `#cfg` imports on toolchains that support them.
 It stages checksum-pinned Mooncakes archives and the requested local module sources in an isolated workspace.
 This lets consumers install a native executable without implementing the registry cache or build phases in their own `package.nix` files.
 The builder is opt-in and does not change `buildProject`, the MoonBit compiler, or the runtime.

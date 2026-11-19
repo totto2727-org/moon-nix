@@ -48,7 +48,7 @@ in
 assert lib.assertMsg (
   builtins.length members == builtins.length (builtins.attrNames localModules)
   && !(localModules ? ${project.name})
-) "buildNativeCli: duplicate workspace module name";
+) "buildNative: duplicate workspace module name";
 pkgs.stdenv.mkDerivation {
   inherit pname;
   inherit (project) version;

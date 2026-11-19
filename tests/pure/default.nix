@@ -30,7 +30,7 @@ let
     mainPackage = "test/cstub/main";
     target = "native";
   };
-  nativeCli = api.buildNativeCli {
+  nativeCli = api.buildNative {
     src = ./fixtures/native-cli;
     localSources = [ ./fixtures/workspace/shared ];
     registry = ./fixtures/registry;
