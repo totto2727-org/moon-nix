@@ -30,6 +30,12 @@ let
     mainPackage = "test/cstub/main";
     target = "native";
   };
+  nativeCli = api.buildNativeCli {
+    src = ./fixtures/native-cli;
+    localSources = [ ./fixtures/workspace/shared ];
+    registry = ./fixtures/registry;
+    registryDownloadUrl = "file://${./fixtures/registry-download}";
+  };
   archiveRegistry = {
     "test/lib" = {
       "0.1.0" = {
@@ -363,6 +369,11 @@ in
   native = pkgs.runCommand "moon-nix-pure-native-test" { } ''
     ${project "native"}/bin/main > result
     test "$(cat result)" = 3
+    cp result $out
+  '';
+  native-cli = pkgs.runCommand "moon-nix-native-cli-test" { } ''
+    ${nativeCli}/bin/cli > result
+    test "$(cat result)" = 41
     cp result $out
   '';
 }

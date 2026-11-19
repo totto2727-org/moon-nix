@@ -39,6 +39,7 @@
           pure-wasm = pure.wasm;
           pure-js = pure.js;
           pure-native = pure.native;
+          native-cli = pure.native-cli;
           c-stub = pure.c-stub;
           virtual = pure.virtual;
           workspace-prebuild = pure.workspace-prebuild;

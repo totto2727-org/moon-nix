@@ -59,6 +59,14 @@ in
   };
   parseManifest = kind: text: manifest.normalize (manifest.parseDSL kind text);
   resolveDependencies = resolver.resolve;
+  buildNativeCli = import ./buildNativeCli.nix {
+    inherit
+      pkgs
+      toolchain
+      manifest
+      resolver
+      ;
+  };
   buildAction = import ./buildAction.nix { inherit pkgs toolchain; };
   finishBuild = import ./finishBuild.nix { inherit pkgs; };
   inherit
