@@ -315,15 +315,19 @@ let
       stem = if kind == "module" then "moon.mod" else "moon.pkg";
       dsl = root + "/${stem}";
       json = root + "/${stem}.json";
+      raw = normalize (
+        if builtins.pathExists dsl then
+          parseDSL kind (builtins.readFile dsl)
+        else if builtins.pathExists json then
+          builtins.fromJSON (builtins.readFile json)
+        else
+          fail "missing ${stem} in ${toString root}"
+      );
     in
-    normalize (
-      if builtins.pathExists dsl then
-        parseDSL kind (builtins.readFile dsl)
-      else if builtins.pathExists json then
-        builtins.fromJSON (builtins.readFile json)
-      else
-        fail "missing ${stem} in ${toString root}"
-    );
+    raw
+    // lib.optionalAttrs (kind == "package" && (raw.pkgtype.kind or null) == "executable") {
+      is-main = true;
+    };
 in
 {
   inherit

@@ -9,6 +9,8 @@ Use =github:moonbit-community/moon-nix= as your library flake input and initiali
 it with =lib.mkMoonNix=. The old =mkMoon2Nix= constructor remains a compatibility
 alias. There is no generator executable.
 
+See [[file:docs/upstream-differences.md][Upstream differences]] for the changes in this fork.
+
 ** Nix project builds
 
 =buildProject= parses manifests, runs MVS, discovers the selected main package's
