@@ -64,13 +64,20 @@ pkgs.stdenv.mkDerivation {
     (
       cd workspace
       printf '%s\n' ${lib.escapeShellArg "members = ${builtins.toJSON ([ "cli" ] ++ map (m: m.directory) members)}"} > moon.work
-      moon build --target native --release ./cli
+      cd cli
+      moon build --target native --release --target-dir "$PWD/../build-output"
     )
     runHook postBuild
   '';
   installPhase = ''
     runHook preInstall
-    install -Dm755 ${lib.escapeShellArg "workspace/_build/native/release/build/${project.name}/${pname}.exe"} "$out/bin/"${lib.escapeShellArg pname}
+    shopt -s globstar nullglob
+    executables=(workspace/build-output/**/${lib.escapeShellArg "${pname}.exe"})
+    if [ "''${#executables[@]}" -ne 1 ]; then
+      printf 'buildProject: expected one %s, found %s\n' ${lib.escapeShellArg "${pname}.exe"} "''${#executables[@]}" >&2
+      exit 1
+    fi
+    install -Dm755 "''${executables[0]}" "$out/bin/"${lib.escapeShellArg pname}
     runHook postInstall
   '';
   meta = {
