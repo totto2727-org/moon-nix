@@ -1,11 +1,11 @@
 # Upstream differences
 
-Upstream: [`moonbit-community/moon-nix` at `026f5a4e9fc7bf78699d69fdb70318c26ac8f07c`](https://github.com/moonbit-community/moon-nix/tree/026f5a4e9fc7bf78699d69fdb70318c26ac8f07c).
+Upstream base: [`moonbit-community/moon-nix` at `026f5a4e9fc7bf78699d69fdb70318c26ac8f07c`](https://github.com/moonbit-community/moon-nix/tree/026f5a4e9fc7bf78699d69fdb70318c26ac8f07c).
 
-The package reader in [`lib/pure/manifest.nix`](../lib/pure/manifest.nix) accepts `pkgtype(kind: "executable")` as a main package declaration.
-`buildProject` can build a package after `moon fmt` converts its old `is_main` declaration.
-The change affects the Nix build only.
-It does not change the MoonBit compiler or runtime.
-The project build tests use the new declaration, and other fixtures still use the old declaration.
+The fork's [`buildProject`](../lib/buildProject.nix) stages a locked registry snapshot and checksum-verified archives in an isolated workspace, then invokes the official `moon build --target native --release`.
+It delegates `moon.pkg` parsing, source discovery, compilation, and linking to Moon instead of recreating the compiler's package graph in Nix.
+The MoonBit compiler, SDK, and runtime sources are unchanged.
 
-When upstream accepts the new declaration, consumers can update the `moon-nix` input to the upstream repository without changing their `buildProject` calls.
+This is a breaking API change: pass the executable module root as `src`, the locked Mooncakes index path as `registry`, and any additional module roots as `localSources`.
+The builder installs one native executable with the module's default binary name.
+The old compiler action APIs, graph introspection, and direct Wasm or JavaScript build targets are no longer provided by the fork.

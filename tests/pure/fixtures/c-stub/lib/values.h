@@ -1,1 +1,0 @@
-#define MOON_NIX_BASE 40

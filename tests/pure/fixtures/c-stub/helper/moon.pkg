@@ -1,1 +1,0 @@
-options("native-stub": ["helper.c"])
