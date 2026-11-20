@@ -1,1 +1,0 @@
-pub using @lib { value }

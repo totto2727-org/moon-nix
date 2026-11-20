@@ -1,2 +1,0 @@
-import { "test/cycle/a" }
-options("is-main": true)

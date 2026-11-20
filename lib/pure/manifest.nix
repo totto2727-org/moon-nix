@@ -34,7 +34,6 @@ let
             whitespace = builtins.match "([[:space:]]+)(.*)" rest;
             comment = builtins.match "(//[^\n]*)(.*)" rest;
             word = builtins.match "([a-zA-Z_][a-zA-Z_0-9]*)(.*)" rest;
-            alias = builtins.match "(@[a-zA-Z_0-9/]+)(.*)" rest;
             number = builtins.match "(-?[0-9]+)(.*)" rest;
             consume = match: kind: {
               token = {
@@ -48,8 +47,6 @@ let
                 scanString i (i + 1)
               else if word != null then
                 consume word "word"
-              else if alias != null then
-                consume alias "alias"
               else if number != null then
                 consume number "number"
               else if
@@ -84,7 +81,7 @@ let
     in
     scan 0;
   parseDSL =
-    kind: input:
+    input:
     let
       tokens = tokenize input;
       count = builtins.length tokens;
@@ -185,37 +182,20 @@ let
         let
           t = at i;
           hasSpec = (at (i + 1)).kind == ":";
+          parts = lib.splitString "@" t.value;
           spec = value (i + 2);
-          hasAs = (at (i + 1)).value == "as";
-          a = at (i + (if hasAs then 2 else 1));
-          hasAlias = hasAs || a.kind == "alias";
-          aliasValue = lib.removePrefix "@" a.value;
         in
         if t.kind != "string" then
           fail "expected quoted import path"
-        else if hasSpec then
-          {
-            value = {
-              path = t.value;
-              inherit (spec) value;
-            };
-            next = spec.next;
-          }
-        else if
-          hasAlias
-          && !builtins.elem a.kind [
-            "word"
-            "alias"
-          ]
-        then
-          fail "expected import alias"
+        else if !hasSpec && builtins.length parts != 2 then
+          fail "module dependency needs a version: ${t.value}"
         else
           {
             value = {
-              path = t.value;
-            }
-            // lib.optionalAttrs hasAlias { alias = aliasValue; };
-            next = i + 1 + (if hasAlias then (if hasAs then 2 else 1) else 0);
+              name = builtins.head parts;
+              value = if hasSpec then spec.value else builtins.elemAt parts 1;
+            };
+            next = if hasSpec then spec.next else i + 1;
           };
       entries =
         i: result:
@@ -225,38 +205,6 @@ let
           let
             key = at i;
             imports = list "}" importItem (expect (i + 1) "{");
-            conditional = (at imports.next).value == "for";
-            section = at (imports.next + 1);
-            importKey =
-              if conditional then
-                "for-${section.value}"
-              else if kind == "module" then
-                "deps"
-              else
-                "import";
-            modDeps = builtins.listToAttrs (
-              map (
-                x:
-                let
-                  parts = lib.splitString "@" x.path;
-                in
-                {
-                  name = builtins.head parts;
-                  value =
-                    x.value or (
-                      if builtins.length parts == 2 then
-                        builtins.elemAt parts 1
-                      else
-                        fail "module dependency needs a version: ${x.path}"
-                    );
-                }
-              ) imports.value
-            );
-            importValue =
-              if kind == "module" && !conditional then
-                modDeps
-              else
-                map (x: if x ? alias then { inherit (x) path alias; } else x.path) imports.value;
             v =
               if (at (i + 1)).kind == "=" then
                 value (i + 2)
@@ -268,19 +216,9 @@ let
           if key.kind != "word" then
             fail "expected entry name"
           else if key.value == "import" then
-            if conditional && section.kind != "string" then
-              fail "expected quoted import condition"
-            else
-              entries (imports.next + (if conditional then 2 else 0)) (
-                result
-                // {
-                  ${importKey} =
-                    if kind == "module" && !conditional then
-                      (result.${importKey} or { }) // importValue
-                    else
-                      (result.${importKey} or [ ]) ++ importValue;
-                }
-              )
+            entries imports.next (
+              result // { deps = (result.deps or { }) // builtins.listToAttrs imports.value; }
+            )
           else
             entries v.next (
               result
@@ -310,28 +248,22 @@ let
       inherit value;
     }) (builtins.removeAttrs combined [ "options" ]);
   read =
-    kind: root:
+    root:
     let
-      stem = if kind == "module" then "moon.mod" else "moon.pkg";
-      dsl = root + "/${stem}";
-      json = root + "/${stem}.json";
-      raw = normalize (
-        if builtins.pathExists dsl then
-          parseDSL kind (builtins.readFile dsl)
-        else if builtins.pathExists json then
-          builtins.fromJSON (builtins.readFile json)
-        else
-          fail "missing ${stem} in ${toString root}"
-      );
+      dsl = root + "/moon.mod";
+      json = root + "/moon.mod.json";
     in
-    raw
-    // lib.optionalAttrs (kind == "package" && (raw.pkgtype.kind or null) == "executable") {
-      is-main = true;
-    };
+    normalize (
+      if builtins.pathExists dsl then
+        parseDSL (builtins.readFile dsl)
+      else if builtins.pathExists json then
+        builtins.fromJSON (builtins.readFile json)
+      else
+        fail "missing moon.mod or moon.mod.json in ${toString root}"
+    );
 in
 {
   inherit
-    tokenize
     parseDSL
     normalize
     read

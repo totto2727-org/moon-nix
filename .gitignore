@@ -1,10 +1,7 @@
 /result*
 /examples/
-/tests/*
-!/tests/pure/
+/tmp/
 /test-*.nix
 **/*_test.mbt
 **/*_wbtest.mbt
 **/test_*.mbt
-
-!/tests/pure/fixtures/app/src/main/main_test.mbt

@@ -1,2 +1,0 @@
-import { "test/virtual/abstract" }
-options("is-main": true, overrides: ["test/virtual/abstract-impl"])

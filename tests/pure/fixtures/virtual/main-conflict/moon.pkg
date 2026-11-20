@@ -1,2 +1,0 @@
-import { "test/virtual/api" }
-options("is-main": true, overrides: ["test/virtual/impl", "test/virtual/impl-other"])

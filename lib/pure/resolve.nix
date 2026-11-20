@@ -104,9 +104,9 @@ let
   registryReader =
     registry: name:
     let
-      file = if builtins.isAttrs registry then null else registry + "/user/${name}.index";
+      file = registry + "/user/${name}.index";
       records =
-        if file != null && builtins.pathExists file then
+        if builtins.pathExists file then
           map (line: manifest.normalize (builtins.fromJSON line)) (
             builtins.filter (line: builtins.match "[[:space:]]*" line == null) (
               lib.splitString "\n" (builtins.readFile file)
@@ -117,8 +117,6 @@ let
     in
     if builtins.match "[a-zA-Z0-9_-]+(/[a-zA-Z0-9_-]+)*" name == null then
       fail "invalid module name ${name}"
-    else if builtins.isAttrs registry then
-      registry.${name} or (fail "module ${name} missing from registry")
     else if records == [ ] then
       fail "module ${name} missing from registry"
     else
@@ -137,7 +135,7 @@ let
   resolve =
     {
       root,
-      registry ? { },
+      registry,
       localModules ? { },
     }:
     let
@@ -175,7 +173,7 @@ let
           else
             walk (builtins.tail queue ++ lib.optionals (!seen) (deps entry)) next;
       gathered =
-        (walk (deps root ++ lib.concatMap (m: deps m.raw) (builtins.attrValues localModules)) {
+        (walk (deps root ++ lib.concatMap deps (builtins.attrValues localModules)) {
           visited = { };
           gathered = { };
         }).gathered;
@@ -192,57 +190,17 @@ let
           ) { } versions
         )
       ) gathered;
-      select =
-        name: required:
-        let
-          matches = builtins.filter (satisfies required) (selected.${name} or [ ]);
-        in
-        if matches == [ ] then
-          fail "no settled version of ${name} satisfies ${required}"
-        else
-          builtins.head matches;
-      edges =
-        raw:
-        builtins.listToAttrs (
-          map (d: {
-            name = d.name;
-            value =
-              if localModules ? ${d.name} then
-                localModules.${d.name}.key
-              else
-                "${d.name}@${select d.name d.version}";
-          }) (deps raw)
-        );
-      modules = builtins.listToAttrs (
-        lib.concatLists (
-          lib.mapAttrsToList (
-            name: versions:
-            map (version: {
-              name = "${name}@${version}";
-              value = {
-                inherit name version;
-                entry = (readRegistry name).${version};
-                edges = edges (readRegistry name).${version};
-              };
-            }) versions
-          ) selected
-        )
-      );
     in
-    {
-      inherit selected modules;
-      rootEdges = edges root;
-      localEdges = lib.mapAttrs (_: m: edges m.raw) localModules;
-    };
+    lib.concatLists (
+      lib.mapAttrsToList (
+        name: versions:
+        map (version: {
+          inherit name version;
+          entry = (readRegistry name).${version};
+        }) versions
+      ) selected
+    );
 in
 {
-  inherit
-    semver
-    versionCompare
-    group
-    satisfies
-    deps
-    registryReader
-    resolve
-    ;
+  inherit resolve;
 }
